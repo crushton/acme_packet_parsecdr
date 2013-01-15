@@ -23,16 +23,13 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$dbname", "", "",
 
 $dbh->do("DROP TABLE IF EXISTS Versions");
 $dbh->do("CREATE TABLE Versions(Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Type TXT)");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C600','start')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C600','stop')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C610','start')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C610','stop')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C620','start')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C620','stop')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C630','start')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C630','stop')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C640','start')");
-$dbh->do("INSERT INTO Versions (Name, Type) VALUES('C640','stop')");
+while ((my $x, my $y) = each(@completed_versions))
+{
+  my $version = $y->{name};
+  my $type = $y->{type};
+  my $sth = $dbh->prepare("INSERT INTO Versions (Name, Type) VALUES(?, ?)");
+  $sth->execute($version, $type);
+}
 $dbh->do("DROP TABLE IF EXISTS Records");
 $dbh->do("CREATE TABLE Records(Id INTEGER PRIMARY KEY AUTOINCREMENT, Versions_Id INT, Placement INT, Name TEXT, VSA_Id)");
 
@@ -63,3 +60,4 @@ close (FH);
 
 $dbh->disconnect();
 
+say "Done creating database...";
