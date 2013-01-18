@@ -7,25 +7,135 @@ use v5.10;
 
 use DBI;
 
-my $filename = $ARGV[0];
-my $out_filename = $filename."_out.csv";
-my $dbname="db/cdrdata.db";
-my $debug = 1;
+my $filename     = $ARGV[0];
+my $out_filename = $filename . "_out.csv";
+my $dbname       = "db/cdrdata.db";
+my $verbose      = 1;                        #0 for no output, 1 for output
+my $version_vsa  = 56;
 
 # Load CDR file given on CLI into script array @records
-if ($debug) { say "Loading file ".$filename." ..."; }
+xlog( "Loading file " . $filename . " ..." );
 open my $FH, '<', $filename;
 my @records;
-while (my $line = <$FH>)
-{
-  chomp($line);
-  push(@records, $line);
+while (<$FH>) {
+    chomp;
+    push( @records, $_ );
 }
 close $FH;
+xlog( "Found Records: " . @records );
+
+# end
 
 # Connect to CDR index database with handle $dbh
-my $dbh = DBI->connect("dbi:SQLite:dbname=$dbname", "", "",
-  { RaiseError => 1 },) or die $DBI::errstr;
+xlog("Connecting to CDR database ...");
+my $dbh =
+  DBI->connect( "dbi:SQLite:dbname=$dbname", "", "", { RaiseError => 1 }, )
+  or die $DBI::errstr;
 
+# end
+
+# create an array of uniq cdr sbc versions available based upon the database types
+my $sth = $dbh->prepare("SELECT Name FROM Versions LIMIT 100");
+$sth->execute;
+
+my %sbc_versions;
+while ( my $row = $sth->fetchrow_array() ) {
+    $sbc_versions{$row} = 1;
+}
+
+# end
+
+xlog("Starting CDR Analysis and Parsing ...");
+xlog("----");
+
+# Main loop to analyze each CDR and stuff it into a new array called @newrecords
+my $count = 1;
+my @newrecords;
+foreach (@records) {
+    my $record_type;
+    xlog( "Record Number: " . $count );
+    $count++;
+
+    # determine record type start, stop, other
+    my @cdr_record = split( /,/, $_ );
+    xlog( "Record Fields: " . @cdr_record );
+    if ( $cdr_record[0] eq "1" ) {
+        $record_type = "start";
+    }
+    elsif ( $cdr_record[0] eq "2" ) {
+        $record_type = "stop";
+    }
+    else {
+        $record_type = "interim";
+        xlog(
+            "Unsupported record type: " . $cdr_record[0] . ", continuing ..." );
+        xlog("----");
+        next;
+    }
+    xlog( "Found Record Type: " . $record_type );
+
+  # determine sbc version from record using known locations in db with VSA Id 56
+    my $record_version;
+    my $sql = join( " ",
+        "SELECT R.Placement FROM Versions",
+        "AS V JOIN Records AS R ON V.Id=R.Versions_Id",
+        "WHERE R.VSA_Id=? AND V.Type=?;" );
+    my $sth = $dbh->prepare($sql);
+    $sth->execute( $version_vsa, $record_type );
+
+    my @sbc_version_locations;
+    while ( my $row = $sth->fetchrow_array() ) {
+        push( @sbc_version_locations, $row );
+    }
+    @sbc_version_locations = uniq(@sbc_version_locations);
+
+    foreach (@sbc_version_locations) {
+        my $key = $_ - 1;
+        if (   exists( $cdr_record[$key] )
+            && $cdr_record[$key] =~ m/Build/i
+            && $cdr_record[$key] =~ m/(([A-Z]{1,3})(\d)\.(\d)\.(\d))/i )
+        {
+            xlog( "Found Record Version: " . $cdr_record[$key] );
+            my $version = $3 . $4 . $5;
+            if ( $2 =~ m/^SCX$/i || $2 =~ m/^SC^/i ) {
+                $record_version = "C" . $version;
+            }
+            elsif ( $2 =~ m/^D$/i ) {
+                $record_version = "D" . $version;
+            }
+        }
+    }
+    if ( !$record_version ) {
+        xlog(
+"Unable to determine CDR version type from known string locations, continuing ..."
+        );
+        xlog("----");
+        next;
+    }
+    if ( !exists( $sbc_versions{$record_version} ) ) {
+        xlog("Unsupported SBC Software Type/Version Combo, continuing ...");
+        xlog("----");
+        next;
+    }
+    xlog("----");
+}
+
+# end
 $dbh->disconnect();
 
+# function to log to screen if verbose is set
+sub xlog {
+    say $_[0] if $verbose;
+}
+
+# function to gracefully exit while displaying a message
+sub gexit {
+    say $_[0];
+    exit 1;
+}
+
+# function to return a sorted uniq array givin any array
+sub uniq {
+    my %seen;
+    return sort( grep( !$seen{$_}++, @_ ) );
+}
