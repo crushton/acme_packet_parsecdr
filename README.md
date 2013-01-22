@@ -12,6 +12,16 @@ Acme Packet Net-Net C620 Start and Stop Records
 Acme Packet Net-Net C630 Start and Stop Records  
 Acme Packet Net-Net C640 Start and Stop Records  
 
+## Example
+Input:
+```
+2,"1.1.1.1",5060,"chris@2.2.2.2",...
+```
+Output:
+```
+Acct-Status-Type="2",NAS-IP-Address="1.1.1.1",NAS-Port="5060",Acct-Session-Id="chris@2.2.2.2",...
+```
+
 ## Requirements
 
 ### Perl Modules
