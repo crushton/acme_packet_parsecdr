@@ -4,6 +4,9 @@ perl script to parse Acme Packet CDR files and add the AVP name to the
 field
 
 ## Supported SBC Software and Record Types
+NOTE: Only FULL record output is supported, i.e. vsa-id-range must have
+all vsa's or be blank. Interim records are currently skipped due to
+complexities of determining the type of interim record.
 
 Acme Packet Net-Net C620 Start and Stop Records  
 Acme Packet Net-Net C630 Start and Stop Records  
