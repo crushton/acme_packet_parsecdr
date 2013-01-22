@@ -3,6 +3,12 @@
 perl script to parse Acme Packet CDR files and add the AVP name to the
 field
 
+## Supported SBC Software and Record Types
+
+Acme Packet Net-Net C620 Start and Stop Records  
+Acme Packet Net-Net C630 Start and Stop Records  
+Acme Packet Net-Net C640 Start and Stop Records  
+
 ## Requirements
 
 ### Perl Modules
