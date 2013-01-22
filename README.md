@@ -29,6 +29,13 @@ Acct-Status-Type="2",NAS-IP-Address="1.1.1.1",NAS-Port="5060",Acct-Session-Id="c
 DBI  
 DBD::SQLite
 
+### Installing Perl Modules (Tested on ActivePerl for Windows, and Native Perl on OSX)
+```
+# perl -MCPAN -e shell
+cpan[1]> install DBI
+cpan[2]> install DBD:SQLite
+```
+
 ## Instructions
 First run "createdb.pl" in order to create the SQLite database based off
 the provided CSV files in the 'db' directory.
