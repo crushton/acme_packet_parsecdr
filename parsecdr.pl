@@ -26,8 +26,8 @@ use constant true  => 1;
 my $filename     = $ARGV[0];
 my $out_filename = $filename . "_out.csv";
 my $dbname       = "db/cdrdata.db";
-my $verbose      = true;
-my $showrecord   = true;
+my $verbose      = false;
+my $showrecord   = false;
 my $version_vsa  = 56;
 
 # Load CDR file given on CLI into script array @records
@@ -178,8 +178,9 @@ if ( @newrecords > 0 ) {
         say $FH $_;
     }
     close $FH;
+    say "Created file: ".$out_filename;
     if ( @records - @newrecords > 0 ) {
-        xlog(   "There were "
+        say(   "There were "
               . ( @records - @newrecords )
               . " records with errors." );
     }
