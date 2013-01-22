@@ -8,9 +8,10 @@ NOTE: Only FULL record output is supported, i.e. vsa-id-range must have
 all vsa's or be blank. Interim records are currently skipped due to
 complexities of determining the type of interim record.
 
-Acme Packet Net-Net C620 Start and Stop Records  
-Acme Packet Net-Net C630 Start and Stop Records  
-Acme Packet Net-Net C640 Start and Stop Records  
+**Acme Packet Net-Net C Series**  
+6.2.0 Start and Stop Records  
+6.3.0 Start and Stop Records  
+6.4.0 Start and Stop Records  
 
 ## Example
 Input:  
@@ -27,6 +28,14 @@ Acct-Status-Type="2",NAS-IP-Address="1.1.1.1",NAS-Port="5060",Acct-Session-Id="c
 ### Perl Modules
 DBI  
 DBD::SQLite
+
+### Installing Perl Modules (Tested on ActivePerl for Windows, and Native Perl on OSX)
+```
+# perl -MCPAN -e shell
+cpan[1]> install DBI
+cpan[2]> install DBD:SQLite
+cpan[3]> quit
+```
 
 ## Instructions
 First run "createdb.pl" in order to create the SQLite database based off
