@@ -4,13 +4,15 @@ use diagnostics;
 use warnings 'all';
 use autodie;
 use v5.10;
-
 use DBI;
+use constant false => 0;
+use constant true  => 1;
 
 my $filename     = $ARGV[0];
 my $out_filename = $filename . "_out.csv";
 my $dbname       = "db/cdrdata.db";
-my $verbose      = 1;                        #0 for no output, 1 for output
+my $verbose      = true;
+my $showrecord   = true;
 my $version_vsa  = 56;
 
 # Load CDR file given on CLI into script array @records
@@ -52,12 +54,19 @@ xlog("----");
 my $count = 1;
 my @newrecords;
 foreach (@records) {
-    my $record_type;
+    my $sql;
+    my $sth;
+    my $record_type;    # array with string of each complete record
+    my @cdr_record
+      ;    # array of individual items in each cdr record split by commas
     xlog( "Record Number: " . $count );
     $count++;
 
+    # remove all quotes from string
+    $_ =~ s/"//g;
+
     # determine record type start, stop, other
-    my @cdr_record = split( /,/, $_ );
+    @cdr_record = split( /,/, $_ );
     xlog( "Record Fields: " . @cdr_record );
     if ( $cdr_record[0] eq "1" ) {
         $record_type = "start";
@@ -76,11 +85,11 @@ foreach (@records) {
 
   # determine sbc version from record using known locations in db with VSA Id 56
     my $record_version;
-    my $sql = join( " ",
+    $sql = join( " ",
         "SELECT R.Placement FROM Versions",
         "AS V JOIN Records AS R ON V.Id=R.Versions_Id",
         "WHERE R.VSA_Id=? AND V.Type=?;" );
-    my $sth = $dbh->prepare($sql);
+    $sth = $dbh->prepare($sql);
     $sth->execute( $version_vsa, $record_type );
 
     my @sbc_version_locations;
@@ -117,11 +126,49 @@ foreach (@records) {
         xlog("----");
         next;
     }
+
+# Use determined record type and version in order to update all records to include the VSA name in them using the KVP format key=value, also strip all quotes out and replace values with quotes regardless of whether the sbc sends them or not
+    $sql = join( " ",
+        "SELECT R.Name FROM Versions",
+        "AS V JOIN Records AS R ON V.Id=R.Versions_Id",
+        "WHERE V.Name=? AND V.Type=?;" );
+    $sth = $dbh->prepare($sql);
+    $sth->execute( $record_version, $record_type );
+
+    my @returned_vsa_names;
+    while ( my $row = $sth->fetchrow_array() ) {
+        push( @returned_vsa_names, $row );
+    }
+
+    my @newcdr_vsa;
+    for ( my $i = 0 ; $i < @returned_vsa_names ; $i++ ) {
+        my $string = $returned_vsa_names[$i] . '="' . $cdr_record[$i] . '"';
+        push( @newcdr_vsa, $string );
+    }
+    push( @newrecords, join( ",", @newcdr_vsa ) );
+    say join( ",", @newcdr_vsa ) if $showrecord;
+
+    # end
+
     xlog("----");
 }
 
 # end
 $dbh->disconnect();
+
+# creating new csv file with updated records
+if ( @newrecords > 0 ) {
+    open my $FH, '>', $out_filename;
+    foreach (@newrecords) {
+        say $FH $_;
+    }
+    close $FH;
+    if ( @records - @newrecords > 0 ) {
+        xlog(   "There were "
+              . ( @records - @newrecords )
+              . " records with errors." );
+    }
+}
 
 # function to log to screen if verbose is set
 sub xlog {
