@@ -34,6 +34,7 @@ DBD::SQLite
 # perl -MCPAN -e shell
 cpan[1]> install DBI
 cpan[2]> install DBD:SQLite
+cpan[3]> quit
 ```
 
 ## Instructions
