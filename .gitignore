@@ -1,2 +1,2 @@
-db/cdrdata.db
+db/*.db
 cdr*
