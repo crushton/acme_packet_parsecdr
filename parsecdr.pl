@@ -20,15 +20,30 @@ use warnings 'all';
 use autodie;
 use v5.10;
 use DBI;
+use Getopt::Long;
+use Pod::Usage;
 use constant false => 0;
 use constant true  => 1;
 
+my $dbname       = "db/cdrdata.db";
+my $verbose      = '';
+my $showrecord   = '';
+my $help         = '';
+my $version_vsa  = 56;
+GetOptions(
+    'verbose'    => \$verbose,
+    'showrecord' => \$showrecord,
+    'help'       => \$help
+);
+
+if ($help) {
+    pod2usage(1);
+}
+elsif (@ARGV < 1) {
+    pod2usage(2);
+}
 my $filename     = $ARGV[0];
 my $out_filename = $filename . "_out.csv";
-my $dbname       = "db/cdrdata.db";
-my $verbose      = false;
-my $showrecord   = false;
-my $version_vsa  = 56;
 
 # Load CDR file given on CLI into script array @records
 xlog( "Loading file " . $filename . " ..." );
@@ -142,7 +157,11 @@ foreach (@records) {
         next;
     }
 
-# Use determined record type and version in order to update all records to include the VSA name in them using the KVP format key=value, also strip all quotes out and replace values with quotes regardless of whether the sbc sends them or not
+# Use determined record type and version in order to update all records to 
+# include the VSA name in them using the KVP format key=value, also strip all
+# quotes out and replace values with quotes regardless of whether the sbc sends 
+# them or not
+
     $sql = join( " ",
         "SELECT R.Name FROM Versions",
         "AS V JOIN Records AS R ON V.Id=R.Versions_Id",
@@ -178,9 +197,9 @@ if ( @newrecords > 0 ) {
         say $FH $_;
     }
     close $FH;
-    say "Created file: ".$out_filename;
+    say "Created file: " . $out_filename;
     if ( @records - @newrecords > 0 ) {
-        say(   "There were "
+        say(    "There were "
               . ( @records - @newrecords )
               . " records with errors." );
     }
@@ -202,3 +221,42 @@ sub uniq {
     my %seen;
     return sort( grep( !$seen{$_}++, @_ ) );
 }
+
+sub usage {
+
+}
+
+__END__
+
+=head1 NAME
+
+parsecdr.pl - Perl scrpt to parse Acme Packet CDR Files
+
+=head1 SYNOPSIS
+
+parsecdr.pl [options] <cdr file>
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-h, -help>
+
+Print a brief help message and exits.
+
+=item B<-v, -verbose>
+
+Prints record information to screen
+
+=item B<-s, -showmessage>
+
+Prints parsed record to screen
+
+=back
+
+=head1 DESCRIPTION
+
+Bparsecdr.pl will read the given input file and add in 
+the Acme Packet specific VSA names to the files in KVP format
+
+=cut
