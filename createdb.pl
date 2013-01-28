@@ -23,6 +23,7 @@ use v5.10;
 use DBI;
 
 my @completed_versions = (
+    { name => "C610", type => "start" },
     { name => "C620", type => "start" },
     { name => "C620", type => "stop" },
     { name => "C630", type => "start" },
