@@ -31,6 +31,7 @@ my @completed_versions = (
     { name => "C630", type => "stop" },
     { name => "C640", type => "start" },
     { name => "C640", type => "stop" },
+    { name => "D710", type => "start" },
 );
 
 my $dbname = "db/cdrdata.db";
